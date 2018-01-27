@@ -1,5 +1,5 @@
 [package]
-name = "chip8"
+name = "rust8"
 version = "0.1.0"
 authors = ["Michael A. <nomicflux@gmail.com>"]
 
