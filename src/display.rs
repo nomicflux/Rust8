@@ -31,6 +31,10 @@ impl Display {
     pub fn is_collision(&self, row: u8, col: u8) -> bool {
         (self.0[row as usize] & (1 << col)) != 0
     }
+
+    pub fn get_display(&self) -> [u64; 32] {
+        self.0
+    }
 }
 
 #[test]

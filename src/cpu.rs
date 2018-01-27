@@ -32,6 +32,10 @@ impl<'a> CPU<'a> {
         }
     }
 
+    pub fn get_display(&self) -> [u64; 32] {
+        self.display.get_display()
+    }
+
     pub fn load_rom(&mut self, rom: &[u8]) {
         self.ram.load_fontset();
         self.ram.load_rom(rom);
