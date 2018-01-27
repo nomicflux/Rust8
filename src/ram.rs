@@ -5,6 +5,30 @@ impl RAM {
         RAM([0; 4000])
     }
 
+    pub fn load_fontset(&mut self) {
+        let fontset: [u8; 80] = [
+            0xF0, 0x90, 0x90, 0x90, 0xF0, // 0
+            0x20, 0x60, 0x20, 0x20, 0x70, // 1
+            0xF0, 0x10, 0xF0, 0x80, 0xF0, // 2
+            0xF0, 0x10, 0xF0, 0x10, 0xF0, // 3
+            0x90, 0x90, 0xF0, 0x10, 0x10, // 4
+            0xF0, 0x80, 0xF0, 0x10, 0xF0, // 5
+            0xF0, 0x80, 0xF0, 0x90, 0xF0, // 6
+            0xF0, 0x10, 0x20, 0x40, 0x40, // 7
+            0xF0, 0x90, 0xF0, 0x90, 0xF0, // 8
+            0xF0, 0x90, 0xF0, 0x10, 0xF0, // 9
+            0xF0, 0x90, 0xF0, 0x90, 0x90, // A
+            0xE0, 0x90, 0xE0, 0x90, 0xE0, // B
+            0xF0, 0x80, 0x80, 0x80, 0xF0, // C
+            0xE0, 0x90, 0x90, 0x90, 0xE0, // D
+            0xF0, 0x80, 0xF0, 0x80, 0xF0, // E
+            0xF0, 0x80, 0xF0, 0x80, 0x80  // F
+        ];
+        for (i, &f) in fontset.into_iter().enumerate() {
+            self.0[i] = f;
+        }
+    }
+
     pub fn set_mem8(&mut self, pos: usize, val: u8) {
         self.0[pos] = val;
     }
@@ -22,6 +46,24 @@ impl RAM {
         let a = (self.0[pos] as u16) << 8;
         let b = self.0[pos + 1] as u16;
         a | b
+    }
+
+    pub fn set_regs(&mut self, pos: usize, regs: &[u8; 16]) {
+        for (i, &data) in regs.into_iter().enumerate() {
+            self.0[pos + i] = data;
+        }
+    }
+
+    pub fn get_regs(&self, pos: usize, regs: &mut [u8; 16]) {
+        for (i, reg) in regs.into_iter().enumerate() {
+            *reg = self.0[pos + i];
+        }
+    }
+
+    pub fn load_rom(&mut self, rom: &[u8]) {
+        for (i, &data) in rom.into_iter().enumerate() {
+            self.set_mem8(0x200 + i, data);
+        }
     }
 }
 
@@ -72,4 +114,37 @@ fn test_double_set16() {
     mem.set_mem16(43, 0xABCD);
     assert_eq!(mem.get_mem16(42), 0x12AB);
     assert_eq!(mem.get_mem16(43), 0xABCD);
+}
+
+#[test]
+fn test_load_rom() {
+    let mut mem = RAM::init();
+    let rom = [0xFF, 0xEE];
+    mem.load_rom(&rom);
+    assert_eq!(mem.get_mem16(0x200), 0xFFEE);
+}
+
+#[test]
+fn test_set_regs() {
+    let mut mem = RAM::init();
+    let regs = [0xFF; 16];
+    mem.set_regs(0, &regs);
+    assert_eq!(mem.get_mem16(0x00), 0xFFFF);
+    assert_eq!(mem.get_mem16(0x02), 0xFFFF);
+    assert_eq!(mem.get_mem16(0x04), 0xFFFF);
+    assert_eq!(mem.get_mem16(0x06), 0xFFFF);
+    assert_eq!(mem.get_mem16(0x08), 0xFFFF);
+    assert_eq!(mem.get_mem16(0x0A), 0xFFFF);
+    assert_eq!(mem.get_mem16(0x0C), 0xFFFF);
+    assert_eq!(mem.get_mem16(0x0E), 0xFFFF);
+}
+
+#[test]
+fn test_get_regs() {
+    let mem = RAM::init();
+    let mut regs = [0xFF; 16];
+    mem.get_regs(0, &mut regs);
+    for &reg in regs.iter() {
+        assert_eq!(reg, 0x00);
+    }
 }

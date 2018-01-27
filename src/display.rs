@@ -5,18 +5,31 @@ impl Display {
         Display([0; 32])
     }
 
-    fn set_sprite_row(&mut self, row: u8, col: u8, sprite_row: u8) {
-        assert!(row < 32);
-        assert!(col < 64 - 8);
-        self.0[row as usize] = self.0[row as usize] ^ ((sprite_row as u64) << col);
+    pub fn clear(&mut self) {
+        self.0 = [0; 32];
     }
 
-    pub fn set_sprite(&mut self, row: u8, col: u8, sprite: &[u8]) {
+    fn set_sprite_row(&mut self, row: u8, col: u8, sprite_row: u8) -> bool {
+        assert!(row < 32);
+        assert!(col < 64 - 8);
+        let oldrow = self.0[row as usize].clone();
+        let newrow = self.0[row as usize] ^ ((sprite_row as u64) << col);
+        self.0[row as usize] = newrow;
+        (newrow | oldrow) > newrow
+    }
+
+    pub fn set_sprite(&mut self, row: u8, col: u8, sprite: &[u8]) -> bool {
         assert!(row + (sprite.len() as u8) < 32);
         assert!(col < 64 - 8);
+        let mut collision = false;
         for (i, &sprite_row) in sprite.into_iter().enumerate() {
-            self.set_sprite_row(row + (i as u8), col, sprite_row);
+            collision = self.set_sprite_row(row + (i as u8), col, sprite_row) || collision;
         }
+        collision
+    }
+
+    pub fn is_collision(&self, row: u8, col: u8) -> bool {
+        (self.0[row as usize] & (1 << col)) != 0
     }
 }
 
@@ -55,4 +68,37 @@ fn test_sprite() {
     display.set_sprite(0,0, &[0xAB, 0xCD]);
     assert_eq!(display.0[0], 0xAB);
     assert_eq!(display.0[1], 0xCD);
+}
+
+#[test]
+fn test_collision_on_empty() {
+    let display = Display::init();
+    assert!(!display.is_collision(0,1));
+}
+
+#[test]
+fn test_non_collision_direct() {
+    let mut display = Display::init();
+    display.set_sprite(0,0,&[0x01]);
+    assert!(!display.is_collision(0,1));
+}
+
+#[test]
+fn test_collision_direct() {
+    let mut display = Display::init();
+    display.set_sprite(0,0,&[0xFF]);
+    assert!(display.is_collision(0,1));
+}
+
+#[test]
+fn test_non_collision_drawing() {
+    let mut display = Display::init();
+    assert!(!display.set_sprite(0,0,&[0x01]));
+}
+
+#[test]
+fn test_collision_drawing() {
+    let mut display = Display::init();
+    display.set_sprite(0,0,&[0xFF]);
+    assert!(display.set_sprite(0,0,&[0x01]));
 }
