@@ -11,13 +11,17 @@ use rust8::display::Display;
 use rust8::ram::RAM;
 use rust8::cpu::CPU;
 
+static BLANK_SCREEN: &'static str = "\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n";
+
 fn row_to_ascii(row: u64) -> String {
     let mut s = String::new();
 
     for i in 0..64 {
-        if row & (1 << i) == 1 {
-            s.push('*');
+        if row & (1 << i) > 0 {
+            s.push('#');
+            s.push('#');
         } else {
+            s.push(' ');
             s.push(' ');
         }
     }
@@ -25,16 +29,15 @@ fn row_to_ascii(row: u64) -> String {
 }
 
 fn clear() {
-    for _i in 0..1000 {
-        print!("\n");
-    }
+    print!("{}", BLANK_SCREEN);
 }
 
 fn draw(screen: &[u64; 32]) {
-    clear();
+    //clear();
 
     for i in 0..32 {
-        print!("{}\n", row_to_ascii(screen[i]));
+        let s = row_to_ascii(screen[i]);
+        println!("{}", s);
     }
 }
 
@@ -45,8 +48,8 @@ fn main() {
         std::process::exit(1);
     }
     let mut file = File::open(&args[1]).expect("Couldn't load ROM file");
-    let mut rom = Vec::<u8>::with_capacity(4000);
-    file.read_exact(&mut rom).expect("Couldn't read ROM file");
+    let mut rom = [0u8; 4000 - 0x200];
+    file.read(&mut rom).expect("Couldn't read ROM file");
 
     let mut ram = RAM::init();
     let mut display = Display::init();

@@ -121,7 +121,7 @@ impl<'a> CPU<'a> {
     fn run_7(&mut self, data: u16) {
         let x = (data >> 8) as usize;
         let val = (data & 0xFF) as u8;
-        self.reg[x] += val;
+        self.reg[x] = self.reg[x].wrapping_add(val);
 
         self.inc_pc();
     }
