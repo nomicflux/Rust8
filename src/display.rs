@@ -10,17 +10,26 @@ impl Display {
     }
 
     fn set_sprite_row(&mut self, row: u8, col: u8, sprite_row: u8) -> bool {
-        assert!(row < 32);
-        assert!(col < 64 - 8);
-        let oldrow = self.0[row as usize].clone();
-        let newrow = self.0[row as usize] ^ ((sprite_row as u64) << col);
-        self.0[row as usize] = newrow;
-        (newrow | oldrow) > newrow
+        assert!(row < 32, "Row: {}", row);
+        assert!(col < 64, "Col: {}", col);
+        let fp = (sprite_row as u64) << (64 - col - 8);
+        let newrow1a = self.0[row as usize] ^ fp;
+        let newrow1b = self.0[row as usize] | fp;
+        self.0[row as usize] = newrow1a;
+        if row < 32 - 1 && col > (64 - 8) {
+            let sp = (sprite_row as u64) >> (63 - col);
+            let newrow2a = self.0[(row + 1) as usize] ^ sp;
+            let newrow2b = self.0[(row + 1) as usize] | sp;
+            self.0[(row + 1) as usize] = newrow2a;
+            (newrow1a != newrow1b) || (newrow2a != newrow2b)
+        } else {
+            newrow1a != newrow1b
+        }
     }
 
     pub fn set_sprite(&mut self, row: u8, col: u8, sprite: &[u8]) -> bool {
-        assert!(row + (sprite.len() as u8) < 32);
-        assert!(col < 64 - 8);
+        assert!(row < 32, "Row: {}", row);
+        assert!(col < 64, "Col: {}", col);
         let mut collision = false;
         for (i, &sprite_row) in sprite.into_iter().enumerate() {
             collision = self.set_sprite_row(row + (i as u8), col, sprite_row) || collision;

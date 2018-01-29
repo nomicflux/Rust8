@@ -199,7 +199,7 @@ impl<'a> CPU<'a> {
         for i in 0..n {
             sprite.push(self.ram.get_mem8((self.i as usize) + i));
         }
-        let carry = self.display.set_sprite(x as u8, y as u8, &sprite);
+        let carry = self.display.set_sprite(self.reg[y], self.reg[x], &sprite);
         self.set_carry(if carry { 1 } else { 0 });
 
         self.inc_pc();

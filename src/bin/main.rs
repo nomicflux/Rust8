@@ -11,17 +11,15 @@ use rust8::display::Display;
 use rust8::ram::RAM;
 use rust8::cpu::CPU;
 
-static BLANK_SCREEN: &'static str = "\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n";
+static BLANK_SCREEN: &'static str = "\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n";
 
 fn row_to_ascii(row: u64) -> String {
     let mut s = String::new();
 
     for i in 0..64 {
-        if row & (1 << i) > 0 {
-            s.push('#');
+        if row & (1 << (63 - i)) != 0 {
             s.push('#');
         } else {
-            s.push(' ');
             s.push(' ');
         }
     }
@@ -33,7 +31,7 @@ fn clear() {
 }
 
 fn draw(screen: &[u64; 32]) {
-    //clear();
+    clear();
 
     for i in 0..32 {
         let s = row_to_ascii(screen[i]);
