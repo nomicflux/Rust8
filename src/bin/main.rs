@@ -13,7 +13,7 @@ use std::sync::mpsc::channel;
 
 use termios::{Termios, TCSANOW, ECHO, ICANON, tcsetattr};
 
-use rust8::keyboard::Keyboard;
+use rust8::keyboard::{Keyboard, EXIT_CHAR};
 use rust8::display::Display;
 use rust8::ram::RAM;
 use rust8::cpu::CPU;
@@ -64,17 +64,22 @@ fn main() {
     new_termios.c_lflag &= !(ICANON | ECHO);
 
     let handle = thread::spawn(move || {
-        tcsetattr(stdin, TCSANOW, &mut new_termios).unwrap();
-        let stdout = io::stdout();
-        let reader = io::stdin();
-        let mut buffer = [0;1];
-        stdout.lock().flush().unwrap();
-        let mut input = reader.take(1);
-        let size = input.read(&mut buffer).unwrap();
-        if size > 0 {
-            let _ = sender.send(buffer[0]);
+        loop {
+            tcsetattr(stdin, TCSANOW, &mut new_termios).unwrap();
+            let stdout = io::stdout();
+            let reader = io::stdin();
+            let mut buffer = [0;1];
+            stdout.lock().flush().unwrap();
+            let mut input = reader.take(1);
+            let size = input.read(&mut buffer).unwrap();
+            if size > 0 {
+                let _ = sender.send(buffer[0]);
+            }
+            tcsetattr(stdin, TCSANOW, & termios).unwrap();
+            if size > 0 && buffer[0] == EXIT_CHAR as u8 {
+                break;
+            }
         }
-        tcsetattr(stdin, TCSANOW, & termios).unwrap();
     });
 
     let mut ram = RAM::init();

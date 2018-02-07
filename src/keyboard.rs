@@ -1,6 +1,9 @@
 use std::collections::HashMap;
 use std::sync::mpsc::Receiver;
 
+pub const EXIT_CHAR: char = 'l';
+const EXIT_VAL: u8 = 17;
+
 lazy_static! {
     static ref KEY_MAP: HashMap<char, u8> =
         [('1', 0),
@@ -19,12 +22,14 @@ lazy_static! {
          ('q', 13),
          ('j', 14),
          ('k', 15),
+         (EXIT_CHAR, EXIT_VAL),
         ].iter().cloned().collect();
 }
 
 pub struct Keyboard {
     keys: [bool; 16],
     input: Receiver<u8>,
+    exit_flag: bool,
     pub last_key: Option<u8>,
 }
 
@@ -33,6 +38,7 @@ impl Keyboard {
         Keyboard {
             keys: [false; 16],
             input,
+            exit_flag: false,
             last_key: None,
         }
     }
@@ -41,7 +47,15 @@ impl Keyboard {
         let former_key = self.last_key.clone();
 
         match self.input.try_recv() {
-            Ok(key) => self.last_key = KEY_MAP.get(&(key.into())).cloned(),
+            Ok(key) => {
+                let res = KEY_MAP.get(&(key.into())).cloned();
+                if res == Some(EXIT_VAL) {
+                    self.exit_flag = true;
+                    self.last_key = None;
+                } else {
+                    self.last_key = res;
+                }
+            },
             _ => self.last_key = None,
         }
 
@@ -56,7 +70,7 @@ impl Keyboard {
     }
 
     pub fn exit_key(&self) -> bool {
-        false
+        self.exit_flag
     }
 
     pub fn reset_last_key(&mut self) {
