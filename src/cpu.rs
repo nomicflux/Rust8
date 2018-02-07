@@ -1,5 +1,8 @@
 extern crate rand;
 
+use std::sync::Arc;
+use std::sync::Mutex;
+
 use opcode::Opcode;
 
 pub struct CPU<'a> {
@@ -11,13 +14,13 @@ pub struct CPU<'a> {
     reg: [u8; 16],
     ram: &'a mut super::RAM,
     display: &'a mut super::Display,
-    keyboard: &'a mut super::Keyboard,
+    keyboard: &'a mut Arc<Mutex<super::Keyboard>>,
 }
 
 impl<'a> CPU<'a> {
     pub fn init(ram: &'a mut super::RAM,
                 display: &'a mut super::Display,
-                keyboard: &'a mut super::Keyboard)
+                keyboard: &'a mut Arc<Mutex<super::Keyboard>> )
                 -> CPU<'a> {
         CPU {
             sound_reg: 0,
@@ -208,7 +211,7 @@ impl<'a> CPU<'a> {
     fn run_e(&mut self, data: u16) {
         let x = (data >> 8) as usize;
         let op = (data & 0xFF) as u8;
-        let key = self.keyboard.is_pressed(self.reg[x] as usize);
+        let key = self.keyboard.lock().unwrap().is_pressed(self.reg[x] as usize);
         match op {
             0x9E => {
                 if key {
@@ -232,13 +235,14 @@ impl<'a> CPU<'a> {
         match op {
             0x07 => self.reg[x] = self.delay_reg,
             0x0A => {
-                self.keyboard.reset_last_key();
+                self.keyboard.lock().unwrap().reset_last_key();
                 loop {
-                    if self.keyboard.last_key.is_some() {
+                    self.keyboard.lock().unwrap().read_input();
+                    if self.keyboard.lock().unwrap().last_key.is_some() {
                         break;
                     }
                 }
-                self.reg[x] = self.keyboard.last_key.unwrap();
+                self.reg[x] = self.keyboard.lock().unwrap().last_key.unwrap();
             },
             0x15 => self.delay_reg = self.reg[x],
             0x18 => self.sound_reg = self.reg[x],

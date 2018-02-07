@@ -1,3 +1,6 @@
+#[macro_use]
+extern crate lazy_static;
+
 pub mod opcode;
 pub mod ram;
 pub mod display;
