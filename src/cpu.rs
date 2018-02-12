@@ -90,7 +90,10 @@ impl<'a> CPU<'a> {
                 self.display.clear();
                 self.inc_pc();
             },
-            0xEE => self.pc = self.stack.pop().unwrap(),
+            0xEE => {
+                self.pc = self.stack.pop().unwrap();
+                self.inc_pc();
+            }
             _ => panic!("Illegal data for 0x0_ op: {}", data),
         }
     }

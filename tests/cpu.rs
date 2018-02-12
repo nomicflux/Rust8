@@ -336,3 +336,22 @@ fn test_delay_timer() { // FX07, FX15
         assert_eq!(cpu.get_reg(0), 0x02);
     });
 }
+
+#[test]
+fn test_basic_subroutine_flow() {
+    cpu_tester(&mut |cpu, _sender| {
+        let rom = [0x22, 0x04,
+                   0x60, 0x01,
+                   0x60, 0x03,
+                   0x00, 0xEE];
+        cpu.load_rom(&rom);
+
+        cpu.run_cycle();
+        assert_eq!(cpu.get_reg(0), 0);
+        cpu.run_cycle();
+        assert_eq!(cpu.get_reg(0), 0x03);
+        cpu.run_cycle();
+        cpu.run_cycle();
+        assert_eq!(cpu.get_reg(0), 0x01);
+    });
+}
