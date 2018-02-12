@@ -653,3 +653,18 @@ fn test_fx65() {
         assert_eq!(cpu.get_reg(8), 0x00);
     });
 }
+
+#[test]
+fn test_collision() {
+    cpu_tester(&mut |cpu, _sender| {
+        let rom = [0xD0, 0x01,
+                   0xD0, 0x01];
+        cpu.load_rom(&rom);
+
+        cpu.run_cycle();
+        assert_eq!(cpu.get_carry(), 0x00);
+
+        cpu.run_cycle();
+        assert_eq!(cpu.get_carry(), 0x01);
+    });
+}
