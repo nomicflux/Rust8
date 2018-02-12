@@ -2,6 +2,8 @@ extern crate rand;
 
 use std::sync::Arc;
 use std::sync::Mutex;
+use std::fs::File;
+use std::io::Write;
 
 use opcode::Opcode;
 use keyboard::Keyboard;
@@ -16,14 +18,16 @@ pub struct CPU<'a> {
     i: u16,
     reg: [u8; 16],
     ram: &'a mut RAM,
-    display: &'a mut Display,
+    display: &'a mut Arc<Mutex<Display>>,
     keyboard: &'a mut Arc<Mutex<Keyboard>>,
+    logfile: &'a mut File,
 }
 
 impl<'a> CPU<'a> {
     pub fn init(ram: &'a mut RAM,
-                display: &'a mut Display,
-                keyboard: &'a mut Arc<Mutex<Keyboard>> )
+                display: &'a mut Arc<Mutex<Display>>,
+                keyboard: &'a mut Arc<Mutex<Keyboard>>,
+                logfile: &'a mut File)
                 -> CPU<'a> {
         CPU {
             sound_reg: 0,
@@ -35,11 +39,12 @@ impl<'a> CPU<'a> {
             ram,
             display,
             keyboard,
+            logfile,
         }
     }
 
     pub fn get_display(&self) -> [u64; 32] {
-        self.display.get_display()
+        self.display.lock().unwrap().get_display()
     }
 
     pub fn get_reg(&self, x: usize) -> u8 {
@@ -99,7 +104,7 @@ impl<'a> CPU<'a> {
     fn run_0(&mut self, data: u16) {
         match data {
             0xE0 => {
-                self.display.clear();
+                self.display.lock().unwrap().clear();
                 self.inc_pc();
             },
             0xEE => {
@@ -227,6 +232,7 @@ impl<'a> CPU<'a> {
         let x = (data >> 8) as usize;
         let val = (data & 0xFF) as u8;
         self.reg[x] = val & rand::random::<u8>();
+        self.inc_pc();
     }
 
     fn run_d(&mut self, data: u16) {
@@ -237,7 +243,7 @@ impl<'a> CPU<'a> {
         for i in 0..n {
             sprite.push(self.ram.get_mem8((self.i as usize) + i));
         }
-        let carry = self.display.set_sprite(self.reg[y], self.reg[x], &sprite);
+        let carry = self.display.lock().unwrap().set_sprite(self.reg[y], self.reg[x], &sprite);
         self.set_carry(if carry { 1 } else { 0 });
 
         self.inc_pc();
@@ -331,6 +337,9 @@ impl<'a> CPU<'a> {
 
     pub fn run_cycle(&mut self) {
         let opcode = self.fetch();
+        self.logfile.write_all(&opcode.to_string().into_bytes()).unwrap();
+        self.logfile.write_all(b"\n").unwrap();
+        let _ = self.logfile.flush();
         self.run_opcode(opcode);
         self.dec_delay();
     }

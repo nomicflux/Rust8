@@ -63,7 +63,7 @@ fn main() {
     let mut new_termios = termios.clone();
     new_termios.c_lflag &= !(ICANON | ECHO);
 
-    let handle = thread::spawn(move || {
+    let handle_keyboard = thread::spawn(move || {
         loop {
             tcsetattr(stdin, TCSANOW, &mut new_termios).unwrap();
             let stdout = io::stdout();
@@ -83,24 +83,33 @@ fn main() {
     });
 
     let mut ram = RAM::init();
-    let mut display = Display::init();
+    let display = Arc::new(Mutex::new(Display::init()));
     let keyboard = Arc::new(Mutex::new(Keyboard::init(receiver)));
+
+    let mut cpu_display = display.clone();
     let mut cpu_keyboard = keyboard.clone();
 
-    let mut cpu = CPU::init(&mut ram, &mut display, &mut cpu_keyboard);
+    let mut logfile = File::create("opcode_logfile.txt").unwrap();
+
+    let mut cpu = CPU::init(&mut ram, &mut cpu_display, &mut cpu_keyboard, &mut logfile);
     cpu.load_rom(&rom);
 
     let hz: f64 = 60.0;
     let time = time::Duration::from_millis((1000.0 / hz).floor() as u64);
 
+
+    let handle_display = thread::spawn(move || {
+        draw(&display.lock().unwrap().get_display());
+        sleep(time);
+    });
+
     loop {
         cpu.run_cycle();
-        draw(&cpu.get_display());
-        sleep(time);
         if keyboard.lock().unwrap().exit_key() {
             break;
         }
     }
 
-    handle.join().unwrap();
+    handle_keyboard.join().unwrap();
+    handle_display.join().unwrap();
 }

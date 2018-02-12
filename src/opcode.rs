@@ -13,6 +13,10 @@ impl Opcode {
     pub fn data(&self) -> u16 {
         self.0 & 0x0FFF
     }
+
+    pub fn to_string(&self) -> String {
+        format!("0x{:X}", self.0)
+    }
 }
 
 #[test]
