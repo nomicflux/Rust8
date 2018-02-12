@@ -4,6 +4,9 @@ use std::sync::Arc;
 use std::sync::Mutex;
 
 use opcode::Opcode;
+use keyboard::Keyboard;
+use display::Display;
+use ram::RAM;
 
 pub struct CPU<'a> {
     sound_reg: u8,
@@ -12,15 +15,15 @@ pub struct CPU<'a> {
     pc: u16,
     i: u16,
     reg: [u8; 16],
-    ram: &'a mut super::RAM,
-    display: &'a mut super::Display,
-    keyboard: &'a mut Arc<Mutex<super::Keyboard>>,
+    ram: &'a mut RAM,
+    display: &'a mut Display,
+    keyboard: &'a mut Arc<Mutex<Keyboard>>,
 }
 
 impl<'a> CPU<'a> {
-    pub fn init(ram: &'a mut super::RAM,
-                display: &'a mut super::Display,
-                keyboard: &'a mut Arc<Mutex<super::Keyboard>> )
+    pub fn init(ram: &'a mut RAM,
+                display: &'a mut Display,
+                keyboard: &'a mut Arc<Mutex<Keyboard>> )
                 -> CPU<'a> {
         CPU {
             sound_reg: 0,
@@ -37,6 +40,22 @@ impl<'a> CPU<'a> {
 
     pub fn get_display(&self) -> [u64; 32] {
         self.display.get_display()
+    }
+
+    pub fn get_reg(&self, x: usize) -> u8 {
+        self.reg[x]
+    }
+
+    pub fn get_carry(&self) -> u8 {
+        self.get_reg(15)
+    }
+
+    pub fn get_delay(&self) -> u8 {
+        self.delay_reg
+    }
+
+    pub fn get_sound(&self) -> u8 {
+        self.sound_reg
     }
 
     pub fn load_rom(&mut self, rom: &[u8]) {
@@ -158,8 +177,8 @@ impl<'a> CPU<'a> {
                 self.reg[x] = res;
                 if carry { self.set_carry(1); } else { self.set_carry(0); }
             },
-            0x0E => {
-                let carry = self.reg[y] & 0x80;
+            0xE => {
+                let carry = (self.reg[y] & 0x80) >> 7;
                 self.reg[x] = self.reg[y] << 1;
                 self.set_carry(carry)
             },
