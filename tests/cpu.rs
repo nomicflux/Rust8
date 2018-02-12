@@ -355,3 +355,74 @@ fn test_basic_subroutine_flow() {
         assert_eq!(cpu.get_reg(0), 0x01);
     });
 }
+
+#[test]
+fn test_3xnn() {
+    cpu_tester(&mut |cpu, _sender| {
+        let rom = [0x30, 0x01,
+                   0x60, 0x03,
+                   0x30, 0x03,
+                   0x60, 0x04,
+                   0x60, 0x05];
+        cpu.load_rom(&rom);
+
+        cpu.run_cycle();
+        assert_eq!(cpu.get_reg(0), 0);
+        cpu.run_cycle();
+        assert_eq!(cpu.get_reg(0), 3);
+
+        cpu.run_cycle();
+        assert_eq!(cpu.get_reg(0), 3);
+        cpu.run_cycle();
+        assert_eq!(cpu.get_reg(0), 5);
+    });
+}
+
+#[test]
+fn test_4xnn() {
+    cpu_tester(&mut |cpu, _sender| {
+        let rom = [0x40, 0x00,
+                   0x60, 0x03,
+                   0x40, 0x01,
+                   0x60, 0x04,
+                   0x60, 0x05];
+        cpu.load_rom(&rom);
+
+        cpu.run_cycle();
+        assert_eq!(cpu.get_reg(0), 0);
+        cpu.run_cycle();
+        assert_eq!(cpu.get_reg(0), 3);
+
+        cpu.run_cycle();
+        assert_eq!(cpu.get_reg(0), 3);
+        cpu.run_cycle();
+        assert_eq!(cpu.get_reg(0), 5);
+    });
+}
+
+#[test]
+fn test_5xy0() {
+    cpu_tester(&mut |cpu, _sender| {
+        let rom = [0x60, 0x01,
+                   0x50, 0x10,
+                   0x61, 0x01,
+                   0x50, 0x10,
+                   0x60, 0x04,
+                   0x60, 0x05];
+        cpu.load_rom(&rom);
+
+        cpu.run_cycle();
+        assert_eq!(cpu.get_reg(0), 0x01);
+        assert_eq!(cpu.get_reg(1), 0x00);
+        cpu.run_cycle();
+        assert_eq!(cpu.get_reg(0), 0x01);
+        assert_eq!(cpu.get_reg(1), 0x00);
+        cpu.run_cycle();
+        assert_eq!(cpu.get_reg(0), 0x01);
+        assert_eq!(cpu.get_reg(1), 0x01);
+
+        cpu.run_cycle();
+        cpu.run_cycle();
+        assert_eq!(cpu.get_reg(0), 0x05);
+    });
+}
