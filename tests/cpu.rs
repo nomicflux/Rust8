@@ -3,6 +3,8 @@ extern crate rust8;
 use std::sync::Arc;
 use std::sync::Mutex;
 use std::sync::mpsc::{Sender,channel};
+use std::thread::{spawn,sleep};
+use std::time::Duration;
 
 use rust8::keyboard::Keyboard;
 use rust8::display::Display;
@@ -424,5 +426,230 @@ fn test_5xy0() {
         cpu.run_cycle();
         cpu.run_cycle();
         assert_eq!(cpu.get_reg(0), 0x05);
+    });
+}
+
+#[test]
+fn test_annn() {
+    cpu_tester(&mut |cpu, _sender| {
+        let rom = [0xA0, 0x42];
+        cpu.load_rom(&rom);
+
+        assert_eq!(cpu.get_i(), 0);
+
+        cpu.run_cycle();
+        assert_eq!(cpu.get_i(), 0x42);
+    });
+}
+
+#[test]
+fn test_bnnn() {
+    cpu_tester(&mut |cpu, _sender| {
+        let rom = [0xB2, 0x04,
+                   0x60, 0x01,
+                   0x60, 0x06,
+                   0xB2, 0x04,
+                   0x60, 0x02,
+                   0x60, 0x03];
+
+        cpu.load_rom(&rom);
+
+        cpu.run_cycle();
+        cpu.run_cycle();
+        assert_eq!(cpu.get_reg(0), 0x06);
+
+        cpu.run_cycle();
+        cpu.run_cycle();
+        assert_eq!(cpu.get_reg(0), 0x03);
+    });
+}
+
+#[test]
+fn test_ex9e() {
+    cpu_tester(&mut |cpu, sender| {
+        let rom = [0xE0, 0x9E,
+                   0x60, 0x01,
+                   0xE0, 0x9E,
+                   0x60, 0x02,
+                   0x60, 0x03];
+        cpu.load_rom(&rom);
+
+        cpu.run_cycle();
+        cpu.run_cycle();
+        assert_eq!(cpu.get_reg(0), 0x01);
+
+        let _ = sender.send('2' as u8);
+        cpu.run_cycle();
+        cpu.run_cycle();
+        assert_eq!(cpu.get_reg(0), 0x03);
+    });
+}
+
+#[test]
+fn test_exa1() {
+    cpu_tester(&mut |cpu, sender| {
+        let rom = [0x60, 0x01,
+                   0xE0, 0xA1,
+                   0x60, 0x02,
+                   0xE0, 0xA1,
+                   0x60, 0x03,
+                   0x60, 0x04];
+        cpu.load_rom(&rom);
+
+        cpu.run_cycle();
+        let _ = sender.send('2' as u8);
+        cpu.run_cycle();
+        cpu.run_cycle();
+        assert_eq!(cpu.get_reg(0), 0x02);
+        let _ = sender.send('1' as u8);
+        cpu.run_cycle();
+        cpu.run_cycle();
+        assert_eq!(cpu.get_reg(0), 0x04);
+    });
+}
+
+#[test]
+fn test_fx0a() {
+    cpu_tester(&mut |cpu, sender| {
+        let rom = [0xF0, 0x0A];
+        cpu.load_rom(&rom);
+
+        assert_eq!(cpu.get_reg(0), 0x00);
+        let sender_clone = sender.clone();
+        spawn(move || {
+            sleep(Duration::new(1,0));
+            let _ = sender_clone.send('3' as u8);
+        });
+        assert_eq!(cpu.get_reg(0), 0x00);
+        cpu.run_cycle();
+        assert_eq!(cpu.get_reg(0), 0x02);
+    });
+}
+
+#[test]
+fn test_fx1e() {
+    cpu_tester(&mut |cpu, _sender| {
+        let rom = [0x60, 0x01,
+                   0xF0, 0x1E];
+        cpu.load_rom(&rom);
+
+        cpu.run_cycle();
+        assert_eq!(cpu.get_i(), 0);
+        assert_eq!(cpu.get_reg(0), 1);
+
+        cpu.run_cycle();
+        assert_eq!(cpu.get_i(), 1);
+        assert_eq!(cpu.get_reg(0), 1);
+    });
+}
+
+#[test]
+fn test_fx33() {
+    cpu_tester(&mut |cpu, _sender| {
+        let rom = [0x60, 0xFE,
+                   0xF0, 0x33,
+                   0x60, 0x01,
+                   0xF0, 0x1E,
+                   0xF0, 0x1E];
+        cpu.load_rom(&rom);
+
+        cpu.run_cycle();
+        assert_eq!(cpu.get_reg(0), 0xFE);
+        assert_eq!(cpu.get_i(), 0);
+
+        cpu.run_cycle();
+        assert_eq!(cpu.get_i(), 0);
+        assert_eq!(cpu.get_at_i(), 2);
+
+        cpu.run_cycle();
+        assert_eq!(cpu.get_reg(0), 1);
+        cpu.run_cycle();
+        assert_eq!(cpu.get_i(), 1);
+        assert_eq!(cpu.get_at_i(), 5);
+
+        cpu.run_cycle();
+        assert_eq!(cpu.get_i(), 2);
+        assert_eq!(cpu.get_at_i(), 4);
+    });
+}
+
+#[test]
+fn test_fx55() {
+    cpu_tester(&mut |cpu, _sender| {
+        let rom = [0xAF, 0x00,
+                   0x60, 0x00,
+                   0x61, 0x01,
+                   0x62, 0x02,
+                   0x63, 0x03,
+                   0x64, 0x04,
+                   0x65, 0x05,
+                   0x66, 0x06,
+                   0x67, 0x07,
+                   0x68, 0x08,
+                   0xF7, 0x55,
+                   0xAF, 0x00,
+                   0xF1, 0x1E,
+                   0xF1, 0x1E,
+                   0xF1, 0x1E,
+                   0xF1, 0x1E,
+                   0xF1, 0x1E,
+                   0xF1, 0x1E,
+                   0xF1, 0x1E,
+                   0xF1, 0x1E];
+        cpu.load_rom(&rom);
+
+        cpu.run_cycle();
+        cpu.run_cycle();
+        cpu.run_cycle();
+        cpu.run_cycle();
+        cpu.run_cycle();
+        cpu.run_cycle();
+        cpu.run_cycle();
+        cpu.run_cycle();
+        cpu.run_cycle();
+        cpu.run_cycle();
+        assert_eq!(cpu.get_i(), 0x0F00);
+        cpu.run_cycle();
+        assert_eq!(cpu.get_i(), 0x0F08);
+        cpu.run_cycle();
+        assert_eq!(cpu.get_i(), 0x0F00);
+        assert_eq!(cpu.get_at_i(), 0);
+        cpu.run_cycle();
+        assert_eq!(cpu.get_at_i(), 1);
+        cpu.run_cycle();
+        assert_eq!(cpu.get_at_i(), 2);
+        cpu.run_cycle();
+        assert_eq!(cpu.get_at_i(), 3);
+        cpu.run_cycle();
+        assert_eq!(cpu.get_at_i(), 4);
+        cpu.run_cycle();
+        assert_eq!(cpu.get_at_i(), 5);
+        cpu.run_cycle();
+        assert_eq!(cpu.get_at_i(), 6);
+        cpu.run_cycle();
+        assert_eq!(cpu.get_at_i(), 7);
+        cpu.run_cycle();
+        assert_eq!(cpu.get_at_i(), 0);
+    });
+}
+
+#[test]
+fn test_fx65() {
+    cpu_tester(&mut |cpu, _sender| {
+        let rom = [0xA0, 0x00,
+                   0xF7, 0x65];
+        cpu.load_rom(&rom);
+
+        cpu.run_cycle();
+        cpu.run_cycle();
+        assert_eq!(cpu.get_reg(0), 0xF0);
+        assert_eq!(cpu.get_reg(1), 0x90);
+        assert_eq!(cpu.get_reg(2), 0x90);
+        assert_eq!(cpu.get_reg(3), 0x90);
+        assert_eq!(cpu.get_reg(4), 0xF0);
+        assert_eq!(cpu.get_reg(5), 0x20);
+        assert_eq!(cpu.get_reg(6), 0x60);
+        assert_eq!(cpu.get_reg(7), 0x20);
+        assert_eq!(cpu.get_reg(8), 0x00);
     });
 }

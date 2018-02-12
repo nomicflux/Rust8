@@ -58,6 +58,18 @@ impl<'a> CPU<'a> {
         self.sound_reg
     }
 
+    pub fn get_i(&self) -> u16 {
+        self.i
+    }
+
+    pub fn get_key(&self, key: usize) -> bool {
+        self.keyboard.lock().unwrap().is_pressed(key)
+    }
+
+    pub fn get_at_i(&self) -> u8 {
+        self.ram.get_mem8(self.i as usize)
+    }
+
     pub fn load_rom(&mut self, rom: &[u8]) {
         self.ram.load_fontset();
         self.ram.load_rom(rom);
@@ -232,6 +244,7 @@ impl<'a> CPU<'a> {
     }
 
     fn run_e(&mut self, data: u16) {
+        self.keyboard.lock().unwrap().read_input();
         let x = (data >> 8) as usize;
         let op = (data & 0xFF) as u8;
         let key = self.keyboard.lock().unwrap().is_pressed(self.reg[x] as usize);
@@ -281,12 +294,12 @@ impl<'a> CPU<'a> {
                 self.ram.set_mem8((self.i + 2) as usize, ones);
             },
             0x55 => {
-                self.ram.set_regs(self.i as usize, &self.reg);
-                self.i += 32;
+                self.ram.set_regs(self.i as usize, &self.reg, (data >> 8) as u8);
+                self.i += 8;
             }
             0x65 => {
-                self.ram.get_regs(self.i as usize, &mut self.reg);
-                self.i += 32;
+                self.ram.get_regs(self.i as usize, &mut self.reg, (data >> 8) as u8);
+                self.i += 8;
             }
             _ => panic!("Illegal op for F {}", op),
         }

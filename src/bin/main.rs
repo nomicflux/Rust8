@@ -94,7 +94,6 @@ fn main() {
     let time = time::Duration::from_millis((1000.0 / hz).floor() as u64);
 
     loop {
-        keyboard.lock().unwrap().read_input();
         cpu.run_cycle();
         draw(&cpu.get_display());
         sleep(time);

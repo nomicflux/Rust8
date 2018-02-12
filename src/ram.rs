@@ -48,14 +48,14 @@ impl RAM {
         a | b
     }
 
-    pub fn set_regs(&mut self, pos: usize, regs: &[u8; 16]) {
-        for (i, &data) in regs.into_iter().enumerate() {
+    pub fn set_regs(&mut self, pos: usize, regs: &[u8; 16], to_reg: u8) {
+        for (i, &data) in regs.into_iter().take(1 + to_reg as usize).enumerate() {
             self.0[pos + i] = data;
         }
     }
 
-    pub fn get_regs(&self, pos: usize, regs: &mut [u8; 16]) {
-        for (i, reg) in regs.into_iter().enumerate() {
+    pub fn get_regs(&self, pos: usize, regs: &mut [u8; 16], to_reg: u8) {
+        for (i, reg) in regs.into_iter().take(1 + to_reg as usize).enumerate() {
             *reg = self.0[pos + i];
         }
     }
@@ -128,7 +128,7 @@ fn test_load_rom() {
 fn test_set_regs() {
     let mut mem = RAM::init();
     let regs = [0xFF; 16];
-    mem.set_regs(0, &regs);
+    mem.set_regs(0, &regs, 0x0F);
     assert_eq!(mem.get_mem16(0x00), 0xFFFF);
     assert_eq!(mem.get_mem16(0x02), 0xFFFF);
     assert_eq!(mem.get_mem16(0x04), 0xFFFF);
@@ -143,7 +143,7 @@ fn test_set_regs() {
 fn test_get_regs() {
     let mem = RAM::init();
     let mut regs = [0xFF; 16];
-    mem.get_regs(0, &mut regs);
+    mem.get_regs(0, &mut regs, 0x0F);
     for &reg in regs.iter() {
         assert_eq!(reg, 0x00);
     }
