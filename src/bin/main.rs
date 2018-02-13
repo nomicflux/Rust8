@@ -94,20 +94,25 @@ fn main() {
     let mut cpu = CPU::init(&mut ram, &mut cpu_display, &mut cpu_keyboard, &mut logfile);
     cpu.load_rom(&rom);
 
-    let hz: f64 = 60.0;
-    let time = time::Duration::from_millis((1000.0 / hz).floor() as u64);
-
+    let display_hz: f64 = 60.0;
+    let display_time = time::Duration::from_millis((1000.0 / display_hz).floor() as u64);
 
     let handle_display = thread::spawn(move || {
-        draw(&display.lock().unwrap().get_display());
-        sleep(time);
+        loop {
+            draw(&display.lock().unwrap().get_display());
+            sleep(display_time);
+        }
     });
+
+    let run_hz: f64 = 240.0;
+    let run_time = time::Duration::from_millis((1000.0 / run_hz).floor() as u64);
 
     loop {
         cpu.run_cycle();
         if keyboard.lock().unwrap().exit_key() {
             break;
         }
+        sleep(run_time);
     }
 
     handle_keyboard.join().unwrap();

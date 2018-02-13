@@ -145,7 +145,6 @@ impl<'a> CPU<'a> {
     fn run_5(&mut self, data: u16) {
         let x = (data >> 8) as usize;
         let y = (data >> 4) as usize;
-        print!("{} {} {}\n", x, y, data);
         if self.reg[x] == self.reg[y] {
             self.inc_pc();
         }
