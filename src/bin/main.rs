@@ -33,17 +33,31 @@ fn row_to_ascii(row: u64) -> String {
     s
 }
 
+fn keys_to_ascii(keys: &[bool; 16]) -> String {
+    let mut s = String::new();
+    for i in 0..16 {
+        if keys[i] {
+            s.push('*');
+        } else {
+            s.push('_');
+        }
+    }
+    s
+}
+
 fn clear() {
     print!("{}", BLANK_SCREEN);
 }
 
-fn draw(screen: &[u64; 32]) {
+fn draw(screen: &[u64; 32], keys: &[bool; 16]) {
     clear();
 
     for i in 0..32 {
         let s = row_to_ascii(screen[i]);
         println!("{}", s);
     }
+    println!("");
+    println!("{}", keys_to_ascii(keys));
 }
 
 fn main() {
@@ -88,6 +102,7 @@ fn main() {
 
     let mut cpu_display = display.clone();
     let mut cpu_keyboard = keyboard.clone();
+    let display_keyboard = keyboard.clone();
 
     let mut logfile = File::create("opcode_logfile.txt").unwrap();
 
@@ -99,20 +114,22 @@ fn main() {
 
     let handle_display = thread::spawn(move || {
         loop {
-            draw(&display.lock().unwrap().get_display());
+            draw(&display.lock().unwrap().get_display(), &display_keyboard.lock().unwrap().keys);
             sleep(display_time);
         }
     });
 
-    let run_hz: f64 = 240.0;
-    let run_time = time::Duration::from_millis((1000.0 / run_hz).floor() as u64);
-
+    let mut time = time::SystemTime::now();
     loop {
+        keyboard.lock().unwrap().read_input();
         cpu.run_cycle();
         if keyboard.lock().unwrap().exit_key() {
             break;
         }
-        sleep(run_time);
+        if time::SystemTime::now() > time + display_time {
+            cpu.dec_delay();
+            time += display_time;
+        }
     }
 
     handle_keyboard.join().unwrap();

@@ -27,7 +27,7 @@ lazy_static! {
 }
 
 pub struct Keyboard {
-    keys: [bool; 16],
+    pub keys: [bool; 16],
     input: Receiver<u8>,
     exit_flag: bool,
     pub last_key: Option<u8>,
@@ -61,7 +61,9 @@ impl Keyboard {
 
         if self.last_key != former_key {
             for fk in former_key {
-                self.release_key(fk.into());
+                if self.last_key != None {
+                    self.release_key(fk.into());
+                }
             }
             for lk in self.last_key {
                 self.push_key(lk.into());
@@ -80,12 +82,11 @@ impl Keyboard {
     pub fn push_key(&mut self, key: usize) {
         assert!(key < 16);
         self.keys[key] = true;
-        self.last_key = Some(key as u8);
     }
 
     pub fn release_key(&mut self, key: usize) {
         assert!(key < 16);
-        self.keys[key] = true;
+        self.keys[key] = false;
     }
 
     pub fn is_pressed(&self, key: usize) -> bool {

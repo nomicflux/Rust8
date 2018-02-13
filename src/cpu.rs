@@ -88,7 +88,7 @@ impl<'a> CPU<'a> {
         self.pc += 2;
     }
 
-    fn dec_delay(&mut self) {
+    pub fn dec_delay(&mut self) {
         if self.sound_reg > 0 {
             self.sound_reg -= 1;
         }
@@ -340,6 +340,6 @@ impl<'a> CPU<'a> {
         self.logfile.write_all(b"\n").unwrap();
         let _ = self.logfile.flush();
         self.run_opcode(opcode);
-        self.dec_delay();
+        //self.dec_delay();
     }
 }
