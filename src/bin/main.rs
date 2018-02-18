@@ -15,50 +15,9 @@ use termios::{Termios, TCSANOW, ECHO, ICANON, tcsetattr};
 
 use rust8::keyboard::{Keyboard, EXIT_CHAR};
 use rust8::display::Display;
+use rust8::displayimpl::{DisplayImpl, AsciiDisplay};
 use rust8::ram::RAM;
 use rust8::cpu::CPU;
-
-static BLANK_SCREEN: &'static str = "\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n";
-
-fn row_to_ascii(row: u64) -> String {
-    let mut s = String::new();
-
-    for i in 0..64 {
-        if row & (1 << (63 - i)) != 0 {
-            s.push('#');
-        } else {
-            s.push(' ');
-        }
-    }
-    s
-}
-
-fn keys_to_ascii(keys: &[bool; 16]) -> String {
-    let mut s = String::new();
-    for i in 0..16 {
-        if keys[i] {
-            s.push('*');
-        } else {
-            s.push('_');
-        }
-    }
-    s
-}
-
-fn clear() {
-    print!("{}", BLANK_SCREEN);
-}
-
-fn draw(screen: &[u64; 32], keys: &[bool; 16]) {
-    clear();
-
-    for i in 0..32 {
-        let s = row_to_ascii(screen[i]);
-        println!("{}", s);
-    }
-    println!("");
-    println!("{}", keys_to_ascii(keys));
-}
 
 fn main() {
     let args: Vec<String> = std::env::args().collect();
@@ -113,8 +72,9 @@ fn main() {
     let display_time = time::Duration::from_millis((1000.0 / display_hz).floor() as u64);
 
     let handle_display = thread::spawn(move || {
+        let ascii_display = AsciiDisplay();
         loop {
-            draw(&display.lock().unwrap().get_display(), &display_keyboard.lock().unwrap().keys);
+            ascii_display.draw(&display.lock().unwrap(), &display_keyboard.lock().unwrap());
             sleep(display_time);
         }
     });
