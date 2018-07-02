@@ -19,6 +19,7 @@ use rust8::displayimpl::{AsciiDisplay, DisplayImpl};
 use rust8::keyboard::{Keyboard, EXIT_CHAR};
 use rust8::ram::RAM;
 
+// Yes, this is all hideously ugly - in flux as overall design for keyboard / display being put in place, after which the Refactoring will begin.
 fn main() {
     let args: Vec<String> = std::env::args().collect();
     if args.len() < 2 {
