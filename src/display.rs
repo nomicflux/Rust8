@@ -10,11 +10,7 @@ impl Display {
     }
 
     fn set_sprite_row(&mut self, row: u8, col: u8, sprite_row: u8) -> bool {
-        let mrow = if row < 32 {
-            row
-        } else {
-            row % 32
-        };
+        let mrow = if row < 32 { row } else { row % 32 };
         let mut collision = false;
         if col <= (64 - 8) {
             let fp = (sprite_row as u64) << (64 - col - 8);

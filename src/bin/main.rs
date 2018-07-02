@@ -1,23 +1,23 @@
 extern crate rust8;
 extern crate termios;
 
-use std::time;
-use std::thread;
-use std::thread::sleep;
 use std::fs::File;
 use std::io;
-use std::io::Write;
 use std::io::Read;
-use std::sync::{Mutex, Arc};
+use std::io::Write;
 use std::sync::mpsc::channel;
+use std::sync::{Arc, Mutex};
+use std::thread;
+use std::thread::sleep;
+use std::time;
 
-use termios::{Termios, TCSANOW, ECHO, ICANON, tcsetattr};
+use termios::{tcsetattr, Termios, ECHO, ICANON, TCSANOW};
 
-use rust8::keyboard::{Keyboard, EXIT_CHAR};
-use rust8::display::Display;
-use rust8::displayimpl::{DisplayImpl, AsciiDisplay};
-use rust8::ram::RAM;
 use rust8::cpu::CPU;
+use rust8::display::Display;
+use rust8::displayimpl::{AsciiDisplay, DisplayImpl};
+use rust8::keyboard::{Keyboard, EXIT_CHAR};
+use rust8::ram::RAM;
 
 fn main() {
     let args: Vec<String> = std::env::args().collect();
@@ -36,22 +36,20 @@ fn main() {
     let mut new_termios = termios.clone();
     new_termios.c_lflag &= !(ICANON | ECHO);
 
-    let handle_keyboard = thread::spawn(move || {
-        loop {
-            tcsetattr(stdin, TCSANOW, &mut new_termios).unwrap();
-            let stdout = io::stdout();
-            let reader = io::stdin();
-            let mut buffer = [0;1];
-            stdout.lock().flush().unwrap();
-            let mut input = reader.take(1);
-            let size = input.read(&mut buffer).unwrap();
-            if size > 0 {
-                let _ = sender.send(buffer[0]);
-            }
-            tcsetattr(stdin, TCSANOW, & termios).unwrap();
-            if size > 0 && buffer[0] == EXIT_CHAR as u8 {
-                break;
-            }
+    let handle_keyboard = thread::spawn(move || loop {
+        tcsetattr(stdin, TCSANOW, &mut new_termios).unwrap();
+        let stdout = io::stdout();
+        let reader = io::stdin();
+        let mut buffer = [0; 1];
+        stdout.lock().flush().unwrap();
+        let mut input = reader.take(1);
+        let size = input.read(&mut buffer).unwrap();
+        if size > 0 {
+            let _ = sender.send(buffer[0]);
+        }
+        tcsetattr(stdin, TCSANOW, &termios).unwrap();
+        if size > 0 && buffer[0] == EXIT_CHAR as u8 {
+            break;
         }
     });
 

@@ -1,13 +1,13 @@
 extern crate rand;
 
-use std::sync::Arc;
-use std::sync::Mutex;
 use std::fs::File;
 use std::io::Write;
+use std::sync::Arc;
+use std::sync::Mutex;
 
-use opcode::Opcode;
-use keyboard::Keyboard;
 use display::Display;
+use keyboard::Keyboard;
+use opcode::Opcode;
 use ram::RAM;
 
 pub struct CPU<'a> {
@@ -24,11 +24,12 @@ pub struct CPU<'a> {
 }
 
 impl<'a> CPU<'a> {
-    pub fn init(ram: &'a mut RAM,
-                display: &'a mut Arc<Mutex<Display>>,
-                keyboard: &'a mut Arc<Mutex<Keyboard>>,
-                logfile: &'a mut File)
-                -> CPU<'a> {
+    pub fn init(
+        ram: &'a mut RAM,
+        display: &'a mut Arc<Mutex<Display>>,
+        keyboard: &'a mut Arc<Mutex<Keyboard>>,
+        logfile: &'a mut File,
+    ) -> CPU<'a> {
         CPU {
             sound_reg: 0,
             delay_reg: 0,
@@ -106,7 +107,7 @@ impl<'a> CPU<'a> {
             0xE0 => {
                 self.display.lock().unwrap().clear();
                 self.inc_pc();
-            },
+            }
             0xEE => {
                 self.pc = self.stack.pop().unwrap();
                 self.inc_pc();
@@ -180,28 +181,40 @@ impl<'a> CPU<'a> {
             4 => {
                 let (res, carry) = self.reg[x].overflowing_add(self.reg[y]);
                 self.reg[x] = res;
-                if carry { self.set_carry(1); } else { self.set_carry(0); }
-            },
+                if carry {
+                    self.set_carry(1);
+                } else {
+                    self.set_carry(0);
+                }
+            }
             5 => {
                 let (res, carry) = self.reg[x].overflowing_sub(self.reg[y]);
                 self.reg[x] = res;
-                if carry { self.set_carry(1); } else { self.set_carry(0); }
-            },
+                if carry {
+                    self.set_carry(1);
+                } else {
+                    self.set_carry(0);
+                }
+            }
             6 => {
                 let carry = self.reg[y] & 0x01;
                 self.reg[x] = self.reg[y] >> 1;
                 self.set_carry(carry)
-            },
+            }
             7 => {
                 let (res, carry) = self.reg[y].overflowing_sub(self.reg[x]);
                 self.reg[x] = res;
-                if carry { self.set_carry(1); } else { self.set_carry(0); }
-            },
+                if carry {
+                    self.set_carry(1);
+                } else {
+                    self.set_carry(0);
+                }
+            }
             0xE => {
                 let carry = (self.reg[y] & 0x80) >> 7;
                 self.reg[x] = self.reg[y] << 1;
                 self.set_carry(carry)
-            },
+            }
             _ => panic!("Illegal op for 8: {}", op),
         }
 
@@ -242,7 +255,10 @@ impl<'a> CPU<'a> {
         for i in 0..n {
             sprite.push(self.ram.get_mem8((self.i as usize) + i));
         }
-        let carry = self.display.lock().unwrap().set_sprite(self.reg[y], self.reg[x], &sprite);
+        let carry = self.display
+            .lock()
+            .unwrap()
+            .set_sprite(self.reg[y], self.reg[x], &sprite);
         self.set_carry(if carry { 1 } else { 0 });
 
         self.inc_pc();
@@ -252,18 +268,21 @@ impl<'a> CPU<'a> {
         self.keyboard.lock().unwrap().read_input();
         let x = (data >> 8) as usize;
         let op = (data & 0xFF) as u8;
-        let key = self.keyboard.lock().unwrap().is_pressed(self.reg[x] as usize);
+        let key = self.keyboard
+            .lock()
+            .unwrap()
+            .is_pressed(self.reg[x] as usize);
         match op {
             0x9E => {
                 if key {
                     self.inc_pc();
                 }
-            },
+            }
             0xA1 => {
                 if !key {
                     self.inc_pc();
                 }
-            },
+            }
             _ => panic!("Illegal op for E {}", op),
         }
 
@@ -284,7 +303,7 @@ impl<'a> CPU<'a> {
                     }
                 }
                 self.reg[x] = self.keyboard.lock().unwrap().last_key.unwrap();
-            },
+            }
             0x15 => self.delay_reg = self.reg[x],
             0x18 => self.sound_reg = self.reg[x],
             0x1E => self.i += self.reg[x] as u16,
@@ -297,13 +316,15 @@ impl<'a> CPU<'a> {
                 self.ram.set_mem8(self.i as usize, hundreds);
                 self.ram.set_mem8((self.i + 1) as usize, tens);
                 self.ram.set_mem8((self.i + 2) as usize, ones);
-            },
+            }
             0x55 => {
-                self.ram.set_regs(self.i as usize, &self.reg, (data >> 8) as u8);
+                self.ram
+                    .set_regs(self.i as usize, &self.reg, (data >> 8) as u8);
                 self.i += 8;
             }
             0x65 => {
-                self.ram.get_regs(self.i as usize, &mut self.reg, (data >> 8) as u8);
+                self.ram
+                    .get_regs(self.i as usize, &mut self.reg, (data >> 8) as u8);
                 self.i += 8;
             }
             _ => panic!("Illegal op for F {}", op),
@@ -336,7 +357,9 @@ impl<'a> CPU<'a> {
 
     pub fn run_cycle(&mut self) {
         let opcode = self.fetch();
-        self.logfile.write_all(&opcode.to_string().into_bytes()).unwrap();
+        self.logfile
+            .write_all(&opcode.to_string().into_bytes())
+            .unwrap();
         self.logfile.write_all(b"\n").unwrap();
         let _ = self.logfile.flush();
         self.run_opcode(opcode);

@@ -5,25 +5,27 @@ pub const EXIT_CHAR: char = 'l';
 const EXIT_VAL: u8 = 17;
 
 lazy_static! {
-    static ref KEY_MAP: HashMap<char, u8> =
-        [('1', 0),
-         ('2', 1),
-         ('3', 2),
-         ('4', 3),
-         ('\'', 4),
-         (',', 5),
-         ('.', 6),
-         ('p', 7),
-         ('a', 8),
-         ('o', 9),
-         ('e', 10),
-         ('u', 11),
-         (';', 12),
-         ('q', 13),
-         ('j', 14),
-         ('k', 15),
-         (EXIT_CHAR, EXIT_VAL),
-        ].iter().cloned().collect();
+    static ref KEY_MAP: HashMap<char, u8> = [
+        ('1', 0),
+        ('2', 1),
+        ('3', 2),
+        ('4', 3),
+        ('\'', 4),
+        (',', 5),
+        ('.', 6),
+        ('p', 7),
+        ('a', 8),
+        ('o', 9),
+        ('e', 10),
+        ('u', 11),
+        (';', 12),
+        ('q', 13),
+        ('j', 14),
+        ('k', 15),
+        (EXIT_CHAR, EXIT_VAL),
+    ].iter()
+        .cloned()
+        .collect();
 }
 
 pub struct Keyboard {
@@ -55,7 +57,7 @@ impl Keyboard {
                 } else {
                     self.last_key = res;
                 }
-            },
+            }
             _ => self.last_key = None,
         }
 
